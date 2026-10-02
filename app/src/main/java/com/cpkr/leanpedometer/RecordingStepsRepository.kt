@@ -36,7 +36,7 @@ class RecordingStepsRepository(
             .isGooglePlayServicesAvailable(
                 appContext,
                 LocalRecordingClient
-                    .LOCAL_RECORDING_CLIENT_MIN_VERSION_CODE,
+                    .LOCAL_RECORDING_CLIENT_STEPS_MIN_VERSION_CODE,
             ) == ConnectionResult.SUCCESS
 
     suspend fun syncRecent(
