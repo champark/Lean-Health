@@ -40,7 +40,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
 
-    implementation("com.google.android.gms:play-services-fitness:21.2.0")
+    implementation("com.google.android.gms:play-services-fitness:21.3.0")
     implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
