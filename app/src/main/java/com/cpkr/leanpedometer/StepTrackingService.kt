@@ -163,7 +163,7 @@ class StepTrackingService :
 
         fun stop(context: Context) {
             StepStore(context.applicationContext)
-                .setTrackingEnabled(false)
+                .markManualStop()
             context.stopService(
                 Intent(
                     context,
