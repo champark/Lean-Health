@@ -4,10 +4,12 @@ A deliberately small Android pedometer for the Lean app family.
 
 ## MVP
 
-- Reads Android's low-power `TYPE_STEP_COUNTER` sensor.
-- Runs continuous tracking in a foreground service of type `health`.
-- Stores daily totals locally for 400 days.
-- Restarts enabled tracking after reboot/package replacement.
+- Uses the accountless Recording API on mobile (FitnessLocal / LocalRecordingClient).
+- Subscribes to TYPE_STEP_COUNT_DELTA for low-power background step collection.
+- Does not keep a custom foreground service or SensorManager listener alive.
+- Pulls current daily totals from the Recording API when the app or Lean Diary requests them.
+- Periodically snapshots the Recording API's recent data into local storage with WorkManager.
+- Retains local daily totals for 400 days.
 - Shows today's total and the most recent 7 days.
 - Exposes a read-only provider for Lean Diary.
 - Does not require Health Connect.
@@ -16,13 +18,13 @@ A deliberately small Android pedometer for the Lean app family.
 
 Lean Diary can query:
 
-`content://com.cpkr.leanpedometer.steps/steps/today`
+content://com.cpkr.leanpedometer.steps/steps/today
 
 or:
 
-`content://com.cpkr.leanpedometer.steps/steps/YYYY-MM-DD`
+content://com.cpkr.leanpedometer.steps/steps/YYYY-MM-DD
 
-See [docs/INTEGRATION.md](docs/INTEGRATION.md).
+See docs/INTEGRATION.md.
 
 The intended Diary behavior is:
 
@@ -38,17 +40,19 @@ The intended Diary behavior is:
 - AGP 8.9.0
 - Gradle 8.11.1
 - JVM 17
+- Google Play services Fitness 21.2.0
+- WorkManager 2.12.0
 
-## First-run limitation
+## Recording behavior
 
-The step-counter sensor exposes a cumulative value since device reboot, not a historic midnight snapshot. If the app is first installed during a day that began before the latest reboot, pre-install steps from that day cannot be reconstructed exactly.
+The first successful subscription starts local Recording API collection. The subscription remains active while the app is not running and across system restarts.
+
+The Recording API keeps up to 10 days of source data. Lean Pedometer therefore periodically copies recent daily totals into its own small local history.
+
+No Google account or Google Fit OAuth flow is required.
 
 ## Build
 
-The Gradle wrapper is checked in.
-
-```bash
 ./gradlew :app:assembleDebug
-```
 
-GitHub Actions runs the same debug build for pull requests and pushes to `main`, and uploads the debug APK as a workflow artifact.
+GitHub Actions builds pull requests and pushes to main, and uploads the debug APK as a workflow artifact.

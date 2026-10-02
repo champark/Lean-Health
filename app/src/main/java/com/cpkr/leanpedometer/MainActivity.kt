@@ -1,9 +1,6 @@
 package com.cpkr.leanpedometer
 
 import android.Manifest
-import android.hardware.Sensor
-import android.hardware.SensorManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
@@ -32,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -42,12 +39,18 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(
         savedInstanceState: Bundle?,
     ) {
         super.onCreate(savedInstanceState)
+
+        StepSyncWorker.schedule(
+            applicationContext,
+        )
+
         setContent {
             val colors =
                 if (isSystemInDarkTheme()) {
@@ -56,7 +59,9 @@ class MainActivity : ComponentActivity() {
                     lightColorScheme()
                 }
 
-            MaterialTheme(colorScheme = colors) {
+            MaterialTheme(
+                colorScheme = colors,
+            ) {
                 LeanPedometerScreen()
             }
         }
@@ -65,103 +70,47 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun LeanPedometerScreen() {
-    val context = LocalContext.current
-    val appContext = context.applicationContext
+    val context =
+        LocalContext.current
+    val appContext =
+        context.applicationContext
     val store =
         remember(appContext) {
             StepStore(appContext)
         }
-    val sensorAvailable =
+    val repository =
         remember(appContext) {
-            val manager =
-                appContext.getSystemService(
-                    SensorManager::class.java,
-                )
-            manager?.getDefaultSensor(
-                Sensor.TYPE_STEP_COUNTER,
-            ) != null
+            RecordingStepsRepository(
+                appContext,
+            )
         }
+    val coroutineScope =
+        rememberCoroutineScope()
 
-    var steps by remember {
-        mutableLongStateOf(store.getTodaySteps())
-    }
-    var trackingEnabled by remember {
-        mutableStateOf(store.isTrackingEnabled())
-    }
-    var recentDays by remember {
-        mutableStateOf(store.getRecentDays(7))
-    }
     var permissionRefresh by remember {
         mutableLongStateOf(0L)
     }
-
-    val notificationPermissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) {
-            permissionRefresh++
-        }
-
-    fun startTracking() {
-        StepTrackingService.start(appContext)
-        trackingEnabled = true
-
-        if (
-            Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.TIRAMISU &&
-            !hasNotificationPermission(appContext)
-        ) {
-            notificationPermissionLauncher.launch(
-                Manifest.permission.POST_NOTIFICATIONS,
-            )
-        }
+    var syncState by remember {
+        mutableStateOf(
+            SyncState.IDLE,
+        )
+    }
+    var steps by remember {
+        mutableLongStateOf(
+            store.getTodaySteps(),
+        )
+    }
+    var recentDays by remember {
+        mutableStateOf(
+            store.getRecentDays(7),
+        )
     }
 
-    val activityPermissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            permissionRefresh++
-            if (granted) {
-                startTracking()
-            }
+    val playServicesReady =
+        remember {
+            repository
+                .isPlayServicesReady()
         }
-
-    fun requestStart() {
-        if (!sensorAvailable) {
-            return
-        }
-
-        if (
-            Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.Q &&
-            !hasActivityRecognitionPermission(appContext)
-        ) {
-            activityPermissionLauncher.launch(
-                Manifest.permission.ACTIVITY_RECOGNITION,
-            )
-        } else {
-            startTracking()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        if (
-            store.isTrackingEnabled() &&
-            hasActivityRecognitionPermission(appContext)
-        ) {
-            StepTrackingService.start(appContext)
-        }
-
-        while (true) {
-            steps = store.getTodaySteps()
-            trackingEnabled =
-                store.isTrackingEnabled()
-            recentDays =
-                store.getRecentDays(7)
-            delay(1_000L)
-        }
-    }
 
     val recognitionGranted =
         remember(permissionRefresh) {
@@ -170,8 +119,100 @@ private fun LeanPedometerScreen() {
             )
         }
 
+    fun reloadFromStore() {
+        steps =
+            store.getTodaySteps()
+        recentDays =
+            store.getRecentDays(7)
+    }
+
+    fun refreshNow() {
+        if (
+            !recognitionGranted ||
+            !playServicesReady
+        ) {
+            return
+        }
+
+        coroutineScope.launch {
+            syncState =
+                SyncState.SYNCING
+
+            syncState =
+                if (
+                    repository.syncRecent(7)
+                ) {
+                    reloadFromStore()
+                    SyncState.ACTIVE
+                } else {
+                    SyncState.ERROR
+                }
+        }
+    }
+
+    val activityPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts
+                .RequestPermission(),
+        ) { granted ->
+            permissionRefresh++
+            if (granted) {
+                StepSyncWorker.schedule(
+                    appContext,
+                )
+            }
+        }
+
+    LaunchedEffect(
+        recognitionGranted,
+        playServicesReady,
+    ) {
+        if (
+            !recognitionGranted ||
+            !playServicesReady
+        ) {
+            return@LaunchedEffect
+        }
+
+        while (true) {
+            syncState =
+                SyncState.SYNCING
+
+            syncState =
+                if (
+                    repository.syncRecent(7)
+                ) {
+                    reloadFromStore()
+                    SyncState.ACTIVE
+                } else {
+                    SyncState.ERROR
+                }
+
+            delay(5_000L)
+        }
+    }
+
+    val statusText =
+        when {
+            !playServicesReady ->
+                "Google Play 서비스 업데이트가 필요합니다."
+
+            !recognitionGranted ->
+                "활동 인식 권한이 필요합니다."
+
+            syncState == SyncState.SYNCING ->
+                "걸음 수 동기화 중…"
+
+            syncState == SyncState.ERROR ->
+                "Recording API 데이터를 읽지 못했습니다."
+
+            else ->
+                "Recording API 기록 활성화"
+        }
+
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier.fillMaxSize(),
     ) {
         Column(
             modifier =
@@ -186,89 +227,87 @@ private fun LeanPedometerScreen() {
                 style =
                     MaterialTheme.typography
                         .headlineMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight =
+                    FontWeight.Bold,
             )
 
             Text(
-                text =
-                    when {
-                        !sensorAvailable ->
-                            "이 기기에는 걸음 수 센서가 없습니다."
-
-                        !recognitionGranted ->
-                            "활동 인식 권한이 필요합니다."
-
-                        trackingEnabled ->
-                            "걸음 수 기록 활성화"
-
-                        else ->
-                            "걸음 수 기록 중지됨"
-                    },
+                text = statusText,
                 style =
-                    MaterialTheme.typography.bodyMedium,
+                    MaterialTheme.typography
+                        .bodyMedium,
             )
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier.fillMaxWidth(),
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier =
+                        Modifier.padding(
+                            20.dp,
+                        ),
                 ) {
                     Text(
                         text = "오늘",
                         style =
-                            MaterialTheme.typography
+                            MaterialTheme
+                                .typography
                                 .titleMedium,
                     )
                     Spacer(
                         modifier =
-                            Modifier.height(8.dp),
+                            Modifier.height(
+                                8.dp,
+                            ),
                     )
                     Text(
                         text =
                             NumberFormat
                                 .getNumberInstance(
-                                    Locale.getDefault(),
+                                    Locale
+                                        .getDefault(),
                                 )
                                 .format(steps),
                         style =
-                            MaterialTheme.typography
+                            MaterialTheme
+                                .typography
                                 .displayMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight =
+                            FontWeight.Bold,
                     )
                     Text(
                         text = "걸음",
                         style =
-                            MaterialTheme.typography
+                            MaterialTheme
+                                .typography
                                 .bodyLarge,
                     )
                 }
             }
 
-            Row(
-                horizontalArrangement =
-                    Arrangement.spacedBy(12.dp),
+            Button(
+                onClick = {
+                    if (!recognitionGranted) {
+                        activityPermissionLauncher
+                            .launch(
+                                Manifest.permission
+                                    .ACTIVITY_RECOGNITION,
+                            )
+                    } else {
+                        refreshNow()
+                    }
+                },
+                enabled =
+                    playServicesReady,
             ) {
-                Button(
-                    onClick = { requestStart() },
-                    enabled =
-                        sensorAvailable &&
-                            !trackingEnabled,
-                ) {
-                    Text("기록 시작")
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        StepTrackingService.stop(
-                            appContext,
-                        )
-                        trackingEnabled = false
+                Text(
+                    if (recognitionGranted) {
+                        "지금 새로고침"
+                    } else {
+                        "기록 시작"
                     },
-                    enabled = trackingEnabled,
-                ) {
-                    Text("기록 중지")
-                }
+                )
             }
 
             Text(
@@ -276,7 +315,8 @@ private fun LeanPedometerScreen() {
                 style =
                     MaterialTheme.typography
                         .titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight =
+                    FontWeight.SemiBold,
             )
 
             recentDays.forEach { item ->
@@ -293,16 +333,18 @@ private fun LeanPedometerScreen() {
 
             Text(
                 text =
-                    "Lean Diary는 이 앱의 읽기 전용 Provider를 통해 날짜별 걸음 수를 직접 조회할 수 있습니다.",
+                    "백그라운드 수집은 Google Play 서비스의 모바일 Recording API가 담당합니다. Lean Pedometer는 포그라운드 서비스를 계속 실행하지 않습니다.",
                 style =
-                    MaterialTheme.typography.bodySmall,
+                    MaterialTheme.typography
+                        .bodySmall,
             )
 
             Text(
                 text =
-                    "처음 설치한 날에 휴대폰이 자정 이전부터 켜져 있었다면 설치 전 걸음 수는 정확히 복원할 수 없습니다.",
+                    "Recording API 원천 데이터는 최대 10일 보관되며, Lean Pedometer가 주기적으로 날짜별 값을 자체 기록에 보존합니다.",
                 style =
-                    MaterialTheme.typography.bodySmall,
+                    MaterialTheme.typography
+                        .bodySmall,
             )
         }
     }
@@ -314,7 +356,8 @@ private fun HistoryRow(
     steps: Long,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier.fillMaxWidth(),
         horizontalArrangement =
             Arrangement.SpaceBetween,
     ) {
@@ -332,7 +375,15 @@ private fun HistoryRow(
                         Locale.getDefault(),
                     )
                     .format(steps),
-            fontWeight = FontWeight.Medium,
+            fontWeight =
+                FontWeight.Medium,
         )
     }
+}
+
+private enum class SyncState {
+    IDLE,
+    SYNCING,
+    ACTIVE,
+    ERROR,
 }

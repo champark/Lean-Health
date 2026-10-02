@@ -12,12 +12,20 @@ import java.time.LocalDate
 
 class StepProvider : ContentProvider() {
     private lateinit var stepStore: StepStore
+    private lateinit var recordingRepository:
+        RecordingStepsRepository
 
     override fun onCreate(): Boolean {
         val appContext =
             context?.applicationContext
                 ?: return false
-        stepStore = StepStore(appContext)
+
+        stepStore =
+            StepStore(appContext)
+        recordingRepository =
+            RecordingStepsRepository(
+                appContext,
+            )
         return true
     }
 
@@ -42,16 +50,24 @@ class StepProvider : ContentProvider() {
                     "Missing date",
                 )
 
-        val date = when (segment) {
-            TODAY -> LocalDate.now()
-            else ->
-                runCatching {
-                    LocalDate.parse(segment)
-                }.getOrElse {
-                    throw IllegalArgumentException(
-                        "Invalid date: $segment",
-                    )
-                }
+        val date =
+            when (segment) {
+                TODAY ->
+                    LocalDate.now()
+
+                else ->
+                    runCatching {
+                        LocalDate.parse(segment)
+                    }.getOrElse {
+                        throw IllegalArgumentException(
+                            "Invalid date: $segment",
+                        )
+                    }
+            }
+
+        runCatching {
+            recordingRepository
+                .syncDateBlocking(date)
         }
 
         return MatrixCursor(COLUMNS).apply {
@@ -105,7 +121,8 @@ class StepProvider : ContentProvider() {
                     "Provider context unavailable",
                 )
 
-        val callingUid = Binder.getCallingUid()
+        val callingUid =
+            Binder.getCallingUid()
         if (callingUid == Process.myUid()) {
             return
         }
@@ -137,7 +154,8 @@ class StepProvider : ContentProvider() {
 
         private const val MATCH_STEPS = 1
         private const val TODAY = "today"
-        private const val SOURCE = "lean_pedometer"
+        private const val SOURCE =
+            "lean_pedometer"
         private const val MIME_TYPE =
             "vnd.android.cursor.item/vnd.com.cpkr.leanpedometer.steps"
 
@@ -155,7 +173,9 @@ class StepProvider : ContentProvider() {
             )
 
         private val URI_MATCHER =
-            UriMatcher(UriMatcher.NO_MATCH).apply {
+            UriMatcher(
+                UriMatcher.NO_MATCH,
+            ).apply {
                 addURI(
                     AUTHORITY,
                     "steps/*",

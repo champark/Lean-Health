@@ -6,30 +6,31 @@ Keep the pedometer independent from Lean Diary while giving Lean Diary a stable,
 
 ## Flow
 
-1. Android's `TYPE_STEP_COUNTER` reports the cumulative device counter.
-2. `StepTrackingService` keeps a foreground health service registered with the sensor.
-3. `StepStore` converts changes in the cumulative counter into local per-day totals.
-4. `StepProvider` exposes date totals to Lean Diary.
-5. Lean Diary reads the provider first and can retain Health Connect as a fallback.
+1. Lean Pedometer receives the Android ACTIVITY_RECOGNITION runtime permission.
+2. LocalRecordingClient.subscribe(TYPE_STEP_COUNT_DELTA) asks Google Play services to perform low-power background collection.
+3. The subscription persists while Lean Pedometer is not running and across system restarts.
+4. RecordingStepsRepository reads aggregated daily totals with LocalDataReadRequest.
+5. StepStore snapshots those totals locally for long-term retention.
+6. StepSyncWorker refreshes the recent 10-day Recording API window every 12 hours.
+7. StepProvider refreshes a requested recent date before returning it to Lean Diary.
+8. Lean Diary reads the provider first and retains Health Connect as a fallback.
 
 ## Persistence
 
-The MVP uses `SharedPreferences` because the stored dataset is tiny: one count and one update timestamp per day, retained for 400 days.
+The Recording API keeps up to 10 days of source data while the subscription is active.
 
-No migration layer is included. The project is still pre-release and the stored shape can be replaced if the design changes.
+Lean Pedometer stores one daily count and update timestamp per day in SharedPreferences, retained for 400 days. This dataset is intentionally tiny, so a database is unnecessary for the MVP.
 
-## Accuracy boundaries
-
-`TYPE_STEP_COUNTER` is cumulative since the most recent device reboot. It does not reveal the exact midnight value retroactively.
-
-Therefore:
-
-- If the service is running across midnight, normal daily counting is accurate.
-- If the device rebooted today, the first reading can recover steps since that reboot.
-- If Lean Pedometer is first installed after midnight on a device that was already running before midnight, steps taken before the first sample cannot be reconstructed safely. Tracking begins from the first sample.
+No migration layer is included. The project is pre-release and the stored shape can be replaced if the design changes.
 
 ## Background execution
 
-Continuous sensor registration is attached to a foreground service of type `health`. Android requires the health foreground-service declaration and an eligible runtime permission such as `ACTIVITY_RECOGNITION`.
+There is no custom foreground tracking service and no boot receiver.
 
-The app restarts tracking after boot or package replacement when tracking was previously enabled.
+Google Play services owns the persistent Recording API subscription. WorkManager only wakes Lean Pedometer periodically to copy recent aggregate totals into its longer local history.
+
+## Availability
+
+The app checks Google Play services against LOCAL_RECORDING_CLIENT_STEPS_MIN_VERSION_CODE. If the installed Play services version is too old, Recording API collection is unavailable until Play services is updated.
+
+The Recording API requires ACTIVITY_RECOGNITION on Android 10 and later.
