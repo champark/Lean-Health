@@ -40,7 +40,7 @@ The intended Diary behavior is:
 - AGP 8.9.0
 - Gradle 8.11.1
 - JVM 17
-- Google Play services Fitness 21.2.0
+- Google Play services Fitness 21.3.0
 - WorkManager 2.12.0
 
 ## Recording behavior
