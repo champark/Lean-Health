@@ -32,8 +32,15 @@ class StepStore(context: Context) {
             } else {
                 null
             }
+        val skipDelta =
+            prefs.getBoolean(
+                KEY_SKIP_NEXT_DELTA,
+                false,
+            )
 
         val delta = when {
+            skipDelta -> 0L
+
             previousRaw == null -> {
                 if (bootDate == today) safeRaw else 0L
             }
@@ -64,6 +71,7 @@ class StepStore(context: Context) {
             .putLong(KEY_LAST_RAW, safeRaw)
             .putString(KEY_LAST_DATE, today.toString())
             .putLong(KEY_LAST_UPDATED_AT, nowMillis)
+            .putBoolean(KEY_SKIP_NEXT_DELTA, false)
             .apply()
 
         pruneOldDays(today)
@@ -95,6 +103,13 @@ class StepStore(context: Context) {
     fun setTrackingEnabled(enabled: Boolean) {
         prefs.edit()
             .putBoolean(KEY_TRACKING_ENABLED, enabled)
+            .apply()
+    }
+
+    fun markManualStop() {
+        prefs.edit()
+            .putBoolean(KEY_TRACKING_ENABLED, false)
+            .putBoolean(KEY_SKIP_NEXT_DELTA, true)
             .apply()
     }
 
@@ -164,6 +179,7 @@ class StepStore(context: Context) {
         private const val KEY_LAST_DATE = "last_date"
         private const val KEY_LAST_UPDATED_AT = "last_updated_at"
         private const val KEY_TRACKING_ENABLED = "tracking_enabled"
+        private const val KEY_SKIP_NEXT_DELTA = "skip_next_delta"
         private const val KEY_LAST_PRUNE_DATE = "last_prune_date"
         private const val DAY_PREFIX = "day:"
         private const val UPDATED_PREFIX = "updated:"
