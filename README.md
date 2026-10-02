@@ -36,6 +36,7 @@ The intended Diary behavior is:
 - compileSdk 35
 - Kotlin 2.2.10
 - AGP 8.9.0
+- Gradle 8.11.1
 - JVM 17
 
 ## First-run limitation
@@ -44,6 +45,10 @@ The step-counter sensor exposes a cumulative value since device reboot, not a hi
 
 ## Build
 
-CI uses Gradle 8.11.1 through `gradle/actions/setup-gradle`.
+The Gradle wrapper is checked in.
 
-The standard Gradle wrapper binary is intentionally not checked in by this bootstrap commit because this repository was created remotely. Running `gradle wrapper --gradle-version 8.11.1` once locally will generate it.
+```bash
+./gradlew :app:assembleDebug
+```
+
+GitHub Actions runs the same debug build for pull requests and pushes to `main`, and uploads the debug APK as a workflow artifact.
