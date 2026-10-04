@@ -154,7 +154,7 @@ class StepStore(context: Context) {
 
     companion object {
         private const val PREFS_NAME =
-            "lean_pedometer_steps"
+            "lean_pedometer_steps_v2"
         private const val KEY_LAST_UPDATED_AT =
             "last_updated_at"
         private const val KEY_LAST_PRUNE_DATE =
