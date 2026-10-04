@@ -47,6 +47,8 @@ The intended Diary behavior is:
 
 The first successful subscription starts local Recording API collection. The subscription remains active while the app is not running and across system restarts.
 
+Steps from before the first successful subscription are not backfilled. Until the first real data point is available, Lean Pedometer treats the day as 'no data yet' rather than a valid 0-step total.
+
 The Recording API keeps up to 10 days of source data. Lean Pedometer therefore periodically copies recent daily totals into its own small local history.
 
 No Google account or Google Fit OAuth flow is required.
