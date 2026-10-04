@@ -87,15 +87,6 @@ class RecordingStepsRepository(
                 )
             }
 
-            if (today !in totals) {
-                stepStore.updateSteps(
-                    date = today,
-                    observedSteps = 0L,
-                    updatedAtEpochMillis =
-                        updatedAt,
-                )
-            }
-
             true
         }.getOrDefault(false)
     }
@@ -144,14 +135,10 @@ class RecordingStepsRepository(
             val total =
                 totals[date]
 
-            if (
-                total != null ||
-                date == today
-            ) {
+            if (total != null) {
                 stepStore.updateSteps(
                     date = date,
-                    observedSteps =
-                        total ?: 0L,
+                    observedSteps = total,
                 )
             } else {
                 cached
