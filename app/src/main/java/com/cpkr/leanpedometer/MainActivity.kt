@@ -105,6 +105,13 @@ private fun LeanPedometerScreen() {
             store.getRecentDays(7),
         )
     }
+    var todayUpdatedAt by remember {
+        mutableLongStateOf(
+            store.getUpdatedAt(
+                LocalDate.now(),
+            ),
+        )
+    }
 
     val playServicesReady =
         remember {
@@ -124,6 +131,10 @@ private fun LeanPedometerScreen() {
             store.getTodaySteps()
         recentDays =
             store.getRecentDays(7)
+        todayUpdatedAt =
+            store.getUpdatedAt(
+                LocalDate.now(),
+            )
     }
 
     fun refreshNow() {
@@ -206,6 +217,9 @@ private fun LeanPedometerScreen() {
             syncState == SyncState.ERROR ->
                 "Recording API 데이터를 읽지 못했습니다."
 
+            todayUpdatedAt <= 0L ->
+                "구독 완료 · 첫 걸음 데이터 대기 중"
+
             else ->
                 "Recording API 기록 활성화"
         }
@@ -263,12 +277,16 @@ private fun LeanPedometerScreen() {
                     )
                     Text(
                         text =
-                            NumberFormat
-                                .getNumberInstance(
-                                    Locale
-                                        .getDefault(),
-                                )
-                                .format(steps),
+                            if (todayUpdatedAt > 0L) {
+                                NumberFormat
+                                    .getNumberInstance(
+                                        Locale
+                                            .getDefault(),
+                                    )
+                                    .format(steps)
+                            } else {
+                                "—"
+                            },
                         style =
                             MaterialTheme
                                 .typography
@@ -334,6 +352,14 @@ private fun LeanPedometerScreen() {
             Text(
                 text =
                     "백그라운드 수집은 Google Play 서비스의 모바일 Recording API가 담당합니다. Lean Pedometer는 포그라운드 서비스를 계속 실행하지 않습니다.",
+                style =
+                    MaterialTheme.typography
+                        .bodySmall,
+            )
+
+            Text(
+                text =
+                    "첫 구독 이전의 걸음은 소급되지 않습니다. 처음 설정한 날에는 권한 허용 이후 걸음부터 기록됩니다.",
                 style =
                     MaterialTheme.typography
                         .bodySmall,
