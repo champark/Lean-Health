@@ -25,6 +25,8 @@ For dates inside the Recording API's recent 10-day window, the provider asks Loc
 
 Older dates are served from Lean Pedometer's local long-term snapshot only.
 
+If no valid snapshot exists for the requested date, the provider returns an empty cursor instead of a synthetic 0-step row.
+
 ## Caller policy
 
 The provider accepts calls from its own process and from the Lean Diary package com.cpkr.lwdiary.
