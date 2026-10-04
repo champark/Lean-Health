@@ -1,12 +1,12 @@
 # Lean Diary integration
 
-Lean Pedometer exposes a read-only Android ContentProvider so Lean Diary can read step totals without Health Connect.
+Lean Health exposes a read-only Android ContentProvider so Lean Diary can read step totals without Health Connect.
 
 ## Contract
 
-- Authority: com.cpkr.leanpedometer.steps
-- URI for today: content://com.cpkr.leanpedometer.steps/steps/today
-- URI for a date: content://com.cpkr.leanpedometer.steps/steps/YYYY-MM-DD
+- Authority: com.cpkr.leanhealth.steps
+- URI for today: content://com.cpkr.leanhealth.steps/steps/today
+- URI for a date: content://com.cpkr.leanhealth.steps/steps/YYYY-MM-DD
 
 Returned columns:
 
@@ -15,7 +15,7 @@ Returned columns:
 | date | TEXT | ISO-8601 local date |
 | steps | INTEGER | Recorded step total for that date |
 | updated_at_epoch_ms | INTEGER | Last successful local snapshot time for the date |
-| source | TEXT | lean_pedometer |
+| source | TEXT | lean_health |
 
 The provider is read-only. Insert, update and delete are rejected.
 
@@ -23,7 +23,7 @@ The provider is read-only. Insert, update and delete are rejected.
 
 For dates inside the Recording API's recent 10-day window, the provider asks LocalRecordingClient for a fresh aggregate before returning the cached value.
 
-Older dates are served from Lean Pedometer's local long-term snapshot only.
+Older dates are served from Lean Health's local long-term snapshot only.
 
 If no valid snapshot exists for the requested date, the provider returns an empty cursor instead of a synthetic 0-step row.
 
@@ -35,6 +35,6 @@ This intentionally avoids a shared signing-key requirement because Play App Sign
 
 ## Lean Diary fallback
 
-Lean Diary queries Lean Pedometer first. If the provider is not installed, unavailable or has no usable snapshot, it falls back to its existing Health Connect reader.
+Lean Diary queries Lean Health first. If the provider is not installed, unavailable or has no usable snapshot, it falls back to its existing Health Connect reader.
 
 The provider call may wait briefly for a local Recording API read, so Lean Diary should perform the provider query away from the UI thread.

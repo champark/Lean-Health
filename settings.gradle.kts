@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Lean-Pedometer"
+rootProject.name = "Lean-Health"
 include(":app")

@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.cpkr.leanpedometer"
+    namespace = "com.cpkr.leanhealth"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.cpkr.leanpedometer"
+        applicationId = "com.cpkr.leanhealth"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

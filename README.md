@@ -1,6 +1,6 @@
-# Lean Pedometer
+# Lean Health
 
-A deliberately small Android pedometer for the Lean app family.
+A small Android health companion for the Lean app family, currently focused on step tracking.
 
 ## MVP
 
@@ -18,17 +18,17 @@ A deliberately small Android pedometer for the Lean app family.
 
 Lean Diary can query:
 
-content://com.cpkr.leanpedometer.steps/steps/today
+content://com.cpkr.leanhealth.steps/steps/today
 
 or:
 
-content://com.cpkr.leanpedometer.steps/steps/YYYY-MM-DD
+content://com.cpkr.leanhealth.steps/steps/YYYY-MM-DD
 
 See docs/INTEGRATION.md.
 
 The intended Diary behavior is:
 
-1. Prefer Lean Pedometer when installed.
+1. Prefer Lean Health when installed.
 2. Fall back to the existing Health Connect reader otherwise.
 
 ## Android baseline
@@ -47,9 +47,9 @@ The intended Diary behavior is:
 
 The first successful subscription starts local Recording API collection. The subscription remains active while the app is not running and across system restarts.
 
-Steps from before the first successful subscription are not backfilled. Until the first real data point is available, Lean Pedometer treats the day as 'no data yet' rather than a valid 0-step total.
+Steps from before the first successful subscription are not backfilled. Until the first real data point is available, Lean Health treats the day as 'no data yet' rather than a valid 0-step total.
 
-The Recording API keeps up to 10 days of source data. Lean Pedometer therefore periodically copies recent daily totals into its own small local history.
+The Recording API keeps up to 10 days of source data. Lean Health therefore periodically copies recent daily totals into its own small local history.
 
 No Google account or Google Fit OAuth flow is required.
 

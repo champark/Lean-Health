@@ -1,4 +1,4 @@
-package com.cpkr.leanpedometer
+package com.cpkr.leanhealth
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -97,7 +97,7 @@ class StepProvider : ContentProvider() {
         values: ContentValues?,
     ): Uri? =
         throw UnsupportedOperationException(
-            "Lean Pedometer provider is read-only",
+            "Lean Health provider is read-only",
         )
 
     override fun delete(
@@ -106,7 +106,7 @@ class StepProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int =
         throw UnsupportedOperationException(
-            "Lean Pedometer provider is read-only",
+            "Lean Health provider is read-only",
         )
 
     override fun update(
@@ -116,7 +116,7 @@ class StepProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int =
         throw UnsupportedOperationException(
-            "Lean Pedometer provider is read-only",
+            "Lean Health provider is read-only",
         )
 
     private fun enforceAllowedCaller() {
@@ -150,7 +150,7 @@ class StepProvider : ContentProvider() {
 
     companion object {
         const val AUTHORITY =
-            "com.cpkr.leanpedometer.steps"
+            "com.cpkr.leanhealth.steps"
         const val COLUMN_DATE = "date"
         const val COLUMN_STEPS = "steps"
         const val COLUMN_UPDATED_AT =
@@ -160,9 +160,9 @@ class StepProvider : ContentProvider() {
         private const val MATCH_STEPS = 1
         private const val TODAY = "today"
         private const val SOURCE =
-            "lean_pedometer"
+            "lean_health"
         private const val MIME_TYPE =
-            "vnd.android.cursor.item/vnd.com.cpkr.leanpedometer.steps"
+            "vnd.android.cursor.item/vnd.com.cpkr.leanhealth.steps"
 
         private val COLUMNS =
             arrayOf(

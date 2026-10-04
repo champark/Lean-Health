@@ -1,4 +1,4 @@
-package com.cpkr.leanpedometer
+package com.cpkr.leanhealth
 
 import android.content.Context
 import androidx.work.CoroutineWorker
@@ -47,7 +47,7 @@ class StepSyncWorker(
 
     companion object {
         private const val UNIQUE_WORK_NAME =
-            "lean_pedometer_step_sync"
+            "lean_health_step_sync"
 
         fun schedule(context: Context) {
             val request =

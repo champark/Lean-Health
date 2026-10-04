@@ -1,4 +1,4 @@
-package com.cpkr.leanpedometer
+package com.cpkr.leanhealth
 
 import android.Manifest
 import android.os.Bundle
@@ -62,14 +62,14 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(
                 colorScheme = colors,
             ) {
-                LeanPedometerScreen()
+                LeanHealthScreen()
             }
         }
     }
 }
 
 @Composable
-private fun LeanPedometerScreen() {
+private fun LeanHealthScreen() {
     val context =
         LocalContext.current
     val appContext =
@@ -237,7 +237,7 @@ private fun LeanPedometerScreen() {
                 Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = "Lean Pedometer",
+                text = "Lean Health",
                 style =
                     MaterialTheme.typography
                         .headlineMedium,
@@ -351,7 +351,7 @@ private fun LeanPedometerScreen() {
 
             Text(
                 text =
-                    "백그라운드 수집은 Google Play 서비스의 모바일 Recording API가 담당합니다. Lean Pedometer는 포그라운드 서비스를 계속 실행하지 않습니다.",
+                    "백그라운드 수집은 Google Play 서비스의 모바일 Recording API가 담당합니다. Lean Health는 포그라운드 서비스를 계속 실행하지 않습니다.",
                 style =
                     MaterialTheme.typography
                         .bodySmall,
@@ -367,7 +367,7 @@ private fun LeanPedometerScreen() {
 
             Text(
                 text =
-                    "Recording API 원천 데이터는 최대 10일 보관되며, Lean Pedometer가 주기적으로 날짜별 값을 자체 기록에 보존합니다.",
+                    "Recording API 원천 데이터는 최대 10일 보관되며, Lean Health가 주기적으로 날짜별 값을 자체 기록에 보존합니다.",
                 style =
                     MaterialTheme.typography
                         .bodySmall,

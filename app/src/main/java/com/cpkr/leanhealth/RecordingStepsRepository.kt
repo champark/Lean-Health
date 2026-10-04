@@ -1,4 +1,4 @@
-package com.cpkr.leanpedometer
+package com.cpkr.leanhealth
 
 import android.content.Context
 import com.google.android.gms.common.ConnectionResult
