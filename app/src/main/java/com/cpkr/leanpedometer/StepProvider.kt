@@ -70,15 +70,20 @@ class StepProvider : ContentProvider() {
                 .syncDateBlocking(date)
         }
 
+        val reading =
+            stepStore.getDailySteps(date)
+
         return MatrixCursor(COLUMNS).apply {
-            addRow(
-                arrayOf(
-                    date.toString(),
-                    stepStore.getSteps(date),
-                    stepStore.getUpdatedAt(date),
-                    SOURCE,
-                ),
-            )
+            if (reading != null) {
+                addRow(
+                    arrayOf(
+                        date.toString(),
+                        reading.steps,
+                        reading.updatedAtEpochMillis,
+                        SOURCE,
+                    ),
+                )
+            }
         }
     }
 
